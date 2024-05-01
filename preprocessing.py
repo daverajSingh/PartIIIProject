@@ -7,10 +7,11 @@ def preprocess_data(data_path):
     Preprocesses the data by converting images to grayscale along the red channel, then reducing size of images to 1/6 of original size.
     
     Args:
-    data: numpy array of shape
+    data: path to the data directory
     
     Returns:
-    numpy array of shape 
+    path to the preprocessed images
+    
     """ 
     
     folder_path = "preprocessed_images"
@@ -25,15 +26,13 @@ def preprocess_data(data_path):
         for img in os.listdir(classPath):
             imagePath = os.path.join(classPath, img)
             if not imagePath.endswith(".JPG"):
-                continue
+                continue # Skip non-image files
             image = cv2.imread(imagePath)
-            image = cv2.resize(image, (image.shape[1]//6, image.shape[0]//6))
+            image = cv2.resize(image, (image.shape[1]//6, image.shape[0]//6)) # Resize to 1/6 of the original size
             
-            image = image[:,:,2]
+            image = image[:,:,2] # Convert to greyscale along the red channel
             
-            cv2.imwrite(os.path.join(folder_path, img), image)    
+            cv2.imwrite(os.path.join(folder_path, img), image)  # Save the preprocessed image to the folder_path  
             
-    #return path to the preprocessed images
+    #Returns path to the preprocessed images
     return folder_path
-
-print(preprocess_data("dataset"))
