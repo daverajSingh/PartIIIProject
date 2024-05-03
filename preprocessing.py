@@ -30,11 +30,10 @@ def preprocess_data(data_path):
             image = cv2.imread(imagePath)
             image = cv2.resize(image, (image.shape[1]//6, image.shape[0]//6)) # Resize to 1/6 of the original size
             
-            
             image = image[:,:,2] # Convert to greyscale along the red channel
             
             #Gaussian blur
-            image = cv2.GaussianBlur(image, (5, 5), 0)
+            image = cv2.GaussianBlur(image, (3, 3), 0)
             
             cv2.imwrite(os.path.join(folder_path, img), image)  # Save the preprocessed image to the folder_path  
             

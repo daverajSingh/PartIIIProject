@@ -26,7 +26,6 @@ def cropCircle(imagePath, pupil, iris):
 
     xP, yP, rP = pupil
     xI, yI, rI = iris
-    
 
     # Draw the iris circle on the mask
     cv2.circle(mask, (xI, yI), rI, 255, -1)
