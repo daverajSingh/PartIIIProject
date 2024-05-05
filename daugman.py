@@ -4,7 +4,7 @@ import cv2
 import matplotlib.pyplot as plt
 from util import cropCircle
 
-def daugmanIDO(data_path, pRadiusRange, iRadiusRange, centerXRange, centerYRange, detlaRadius):
+def daugmanIDO(data_path, pRadiusRange, iRadiusRange, centerXRange, centerYRange, deltaRadius):
     """
     Performs Daugmans Integro Differential Operator on the preprocessed images.
     
@@ -12,69 +12,65 @@ def daugmanIDO(data_path, pRadiusRange, iRadiusRange, centerXRange, centerYRange
     data_path: path to the preprocessed images
     
     Returns:
-    path to the processed images
+    iris: segmented iris
     
     """
+    # Load the image from the data_path
+    img = cv2.imread(data_path)
+    imgName = os.path.basename(data_path)
     
-    folder_path = "DaugmanIDO_images"
-    if not os.path.exists(folder_path):
-        os.makedirs(folder_path)
-    # Load the image
-    
-    for iris in os.listdir(data_path):
-        iris_path = os.path.join(data_path, iris)
+    best_iris = (0,0,0)
+    max_gradientI = -np.inf   
         
-        img = cv2.imread(iris_path)
+    best_pupil = (0,0,0)
+    max_gradientP = -np.inf
         
-        best_iris = (0,0,0)
-        max_gradientI = -np.inf   
+    rows, cols, _ = img.shape
+    for r in range(iRadiusRange[0], iRadiusRange[1], deltaRadius):
+        for x in range(centerXRange[0], centerXRange[1]):
+            for y in range(centerYRange[0], centerYRange[1]):
+                if x - r < 0 or x + r > cols or y - r < 0 or y + r > rows:
+                    continue  # Ensure the circle mask doesn't go out of image bounds
+               # Create a circular mask
+                mask = np.zeros((rows, cols), dtype=np.uint8)
+                cv2.circle(mask, (x, y), r, 255, 1)
+                # Calculate gradients along the circle
+                edges = cv2.Canny(img, 120, 150)
+                masked_edges = cv2.bitwise_and(edges, edges, mask=mask)
+                gradient_sum = np.sum(masked_edges) / (2 * np.pi * r)  # Normalize by circumference
+                
+                if gradient_sum > max_gradientI:
+                    max_gradientI = gradient_sum
+                    best_iris = (x, y, r)
         
-        best_pupil = (0,0,0)
-        max_gradientP = -np.inf
         
-        rows, cols, _ = img.shape
-        for r in range(iRadiusRange[0], iRadiusRange[1], detlaRadius):
-            for x in range(centerXRange[0], centerXRange[1]):
-                for y in range(centerYRange[0], centerYRange[1]):
-                    if x - r < 0 or x + r > cols or y - r < 0 or y + r > rows:
-                        continue  # Ensure the circle mask doesn't go out of image bounds
-                   # Create a circular mask
-                    mask = np.zeros((rows, cols), dtype=np.uint8)
-                    cv2.circle(mask, (x, y), r, 255, 1)
-                    # Calculate gradients along the circle
-                    edges = cv2.Canny(img, 120, 150)
-                    masked_edges = cv2.bitwise_and(edges, edges, mask=mask)
-                    gradient_sum = np.sum(masked_edges) / (2 * np.pi * r)  # Normalize by circumference
+    #Pupil is likely to be closer to the center of the iris, therefore can make range shorter
+        
+    pCenterXRange = (best_iris[0] - 7, best_iris[0] + 7)
+    pCenterYRange = (best_iris[1] - 7, best_iris[1] + 7)
+        
+    for r in range(pRadiusRange[0], pRadiusRange[1], deltaRadius):
+        for x in range(pCenterXRange[0], pCenterXRange[1]):
+            for y in range(pCenterYRange[0], pCenterYRange[1]):
+                if x - r < 0 or x + r > cols or y - r < 0 or y + r > rows:
+                    continue  # Ensure the circle mask doesn't go out of image bounds
+                # Create a circular mask
+                mask = np.zeros((rows, cols), dtype=np.uint8)
+                cv2.circle(mask, (x, y), r, 255, 1)
+                # Calculate gradients along the circle
+                edges = cv2.Canny(img, 40, 80)
+                masked_edges = cv2.bitwise_and(edges, edges, mask=mask)
+                gradient_sum = np.sum(masked_edges) / (2 * np.pi * r)  # Normalize by circumference
                     
-                    if gradient_sum > max_gradientI:
-                        max_gradientI = gradient_sum
-                        best_iris = (x, y, r)
+                if gradient_sum > max_gradientP:
+                    max_gradientP = gradient_sum
+                    best_pupil = (x, y, r)
         
-        for r in range(pRadiusRange[0], pRadiusRange[1], detlaRadius):
-            for x in range(centerXRange[0], centerXRange[1]):
-                for y in range(centerYRange[0], centerYRange[1]):
-                    if x - r < 0 or x + r > cols or y - r < 0 or y + r > rows:
-                        continue  # Ensure the circle mask doesn't go out of image bounds
-                   # Create a circular mask
-                    mask = np.zeros((rows, cols), dtype=np.uint8)
-                    cv2.circle(mask, (x, y), r, 255, 1)
-                    # Calculate gradients along the circle
-                    edges = cv2.Canny(img, 40, 80)
-                    masked_edges = cv2.bitwise_and(edges, edges, mask=mask)
-                    gradient_sum = np.sum(masked_edges) / (2 * np.pi * r)  # Normalize by circumference
-                    
-                    if gradient_sum > max_gradientP:
-                        max_gradientP = gradient_sum
-                        best_pupil = (x, y, r)
+    print(best_iris, best_pupil, imgName)
         
-        print(best_iris, best_pupil)
-        
-        new_image = cropCircle(iris_path, best_pupil, best_iris)
-
-        cv2.imwrite(os.path.join(folder_path, iris), new_image)  # Save the preprocessed image to the folder_path
-    
-    #Returns path to the processed images
-    return folder_path
+    new_image = cropCircle(imgName, best_pupil, best_iris)
+    #Returns processed image and values
+    return new_image, best_pupil, best_iris
 
 def daugmanRubberSheet(iris, pupilRadius, irisRadius, pupilCenter, irisCenter):
     """
@@ -87,15 +83,9 @@ def daugmanRubberSheet(iris, pupilRadius, irisRadius, pupilCenter, irisCenter):
     centers: centers of each
     
     Returns:
-    path to the processed images
+    unwrapped: unwrapped image of the iris
     
     """
-    
-    folder_path = "DaugmanRubberSheet_images"
-    if not os.path.exists(folder_path):
-        os.makedirs(folder_path)
-    
-    #INSERT CODE HERE
     angleResolution = 360
     radiusResolution = 60
     unwrapped = np.zeros((360, 60), dtype=np.uint8)
@@ -115,7 +105,7 @@ def daugmanRubberSheet(iris, pupilRadius, irisRadius, pupilCenter, irisCenter):
     return unwrapped
 
 
-def daugmanGaborWavelet(data_path):
+def daugmanGaborWavelet(image):
     """
     Performs Daugmans Gabor Wavelet on the processed images.
     
@@ -123,17 +113,31 @@ def daugmanGaborWavelet(data_path):
     data_path: path to the normalised images
     
     Returns:
-    path to the processed images
+    featureVector: feature vector of the processed image
     
     """
-    
-    folder_path = "DaugmanGaborWavelet_images"
-    if not os.path.exists(folder_path):
-        os.makedirs(folder_path)
-    
-    #INSERT CODE HERE
-    
-    #Returns path to the processed images
-    return folder_path
+    def gaborfilter(image, frequency, theta):
+        kernel = cv2.getGaborKernel((21, 21), 5, theta, frequency, 1, 0, ktype=cv2.CV_32F)
+        filtered = cv2.filter2D(image, cv2.CV_8UC3, kernel)
+        return filtered
 
-daugmanIDO("preprocessed_images", (20, 40), (65, 90), (120, 180), (80, 120), 1)
+    freq = [0.1, 0.2, 0.3]
+    theta = [0, np.pi/4, np.pi/2, 3*np.pi/4]
+    features = []
+    
+    #Apply Gabor Filter to find the magnitude of the image
+    for frequency in freq:
+        for angle in theta:
+            filtered = gaborfilter(image, frequency, angle)
+            mag, _ = cv2.cartToPolar(filtered.real, filtered.imag)
+            features.append(mag)
+    
+    #Simple Encoding
+    featureVector = np.concatenate(features)
+    featureVector = np.where(featureVector > np.mean(featureVector), 1, 0)
+    
+    #Returns binary sequence
+    return featureVector
+
+daugmanIDO("preprocessed_images", (25, 45), (70, 90), (150, 180), (80, 120), 1)
+image = cv2.imread("DaugmanIDO_images\IMG_058_R_1.JPG")
