@@ -16,7 +16,7 @@ def daugmanIDO(data_path, pRadiusRange, iRadiusRange, centerXRange, centerYRange
     
     """
     # Load the image from the data_path
-    img = cv2.imread(data_path)
+    img = cv2.imread(data_path, cv2.IMREAD_GRAYSCALE)
     imgName = os.path.basename(data_path)
     
     best_iris = (0,0,0)
@@ -25,7 +25,7 @@ def daugmanIDO(data_path, pRadiusRange, iRadiusRange, centerXRange, centerYRange
     best_pupil = (0,0,0)
     max_gradientP = -np.inf
         
-    rows, cols, _ = img.shape
+    rows, cols = img.shape
     for r in range(iRadiusRange[0], iRadiusRange[1], deltaRadius):
         for x in range(centerXRange[0], centerXRange[1]):
             for y in range(centerYRange[0], centerYRange[1]):
@@ -68,7 +68,7 @@ def daugmanIDO(data_path, pRadiusRange, iRadiusRange, centerXRange, centerYRange
         
     print(best_iris, best_pupil, imgName)
         
-    new_image = cropCircle(imgName, best_pupil, best_iris)
+    new_image = cropCircle(img, best_pupil, best_iris)
     #Returns processed image and values
     return new_image, best_pupil, best_iris
 
@@ -88,7 +88,7 @@ def daugmanRubberSheet(iris, pupilRadius, irisRadius, pupilCenter, irisCenter):
     """
     angleResolution = 360
     radiusResolution = 60
-    unwrapped = np.zeros((360, 60), dtype=np.uint8)
+    unwrapped = np.zeros((angleResolution, radiusResolution), dtype=np.uint8)
     
     dx = irisCenter[0] - pupilCenter[0]
     dy = irisCenter[1] - pupilCenter[1]
@@ -100,7 +100,7 @@ def daugmanRubberSheet(iris, pupilRadius, irisRadius, pupilCenter, irisCenter):
             x = int(pupilCenter[0] + r * np.cos(angle) + dx)
             y = int(pupilCenter[1] + r * np.sin(angle) + dy)
             if 0 <= x < iris.shape[1] and 0 <= y < iris.shape[0]:
-                unwrapped[j, i] = iris[y, x]
+                unwrapped[i, j] = iris[y, x]
         
     return unwrapped
 
@@ -139,5 +139,12 @@ def daugmanGaborWavelet(image):
     #Returns binary sequence
     return featureVector
 
-daugmanIDO("preprocessed_images", (25, 45), (70, 90), (150, 180), (80, 120), 1)
-image = cv2.imread("DaugmanIDO_images\IMG_058_R_1.JPG")
+image, pupil, iris = daugmanIDO("preprocessed_images\IMG_001_R_1.JPG", (25, 40), (60, 90), (150, 180), (80, 120), 1)
+
+plt.imshow(image, cmap="gray")
+plt.show()
+
+unwrapped = daugmanRubberSheet(image, pupil[2], iris[2], pupil[:2], iris[:2])
+
+plt.imshow(unwrapped, cmap="gray")
+plt.show()
