@@ -18,6 +18,7 @@ def daugmanIDO(data_path, pRadiusRange, iRadiusRange, centerXRange, centerYRange
     # Load the image from the data_path
     img = cv2.imread(data_path, cv2.IMREAD_GRAYSCALE)
     imgName = os.path.basename(data_path)
+
     
     best_iris = (0,0,0)
     max_gradientI = -np.inf   
@@ -101,7 +102,7 @@ def daugmanRubberSheet(iris, pupilRadius, irisRadius, pupilCenter, irisCenter):
             y = int(pupilCenter[1] + r * np.sin(angle) + dy)
             if 0 <= x < iris.shape[1] and 0 <= y < iris.shape[0]:
                 unwrapped[i, j] = iris[y, x]
-        
+    
     return unwrapped
 
 
@@ -144,7 +145,9 @@ image, pupil, iris = daugmanIDO("preprocessed_images\IMG_001_R_1.JPG", (25, 40),
 plt.imshow(image, cmap="gray")
 plt.show()
 
-unwrapped = daugmanRubberSheet(image, pupil[2], iris[2], pupil[:2], iris[:2])
+unwrapped = daugmanRubberSheet(image, pupil[2], iris[2], (pupil[0], pupil[1]), (iris[0], iris[1]))
 
 plt.imshow(unwrapped, cmap="gray")
 plt.show()
+
+print(daugmanGaborWavelet(unwrapped))

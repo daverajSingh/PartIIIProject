@@ -33,12 +33,6 @@ def cropCircle(imageName, pupil, iris):
 
     # Apply the mask to isolate the iris
     iris = cv2.bitwise_and(imageName, mask)
-
-    # Find bounding box coordinates for cropping
-    y, x = np.where(mask > 0)
-    (top_y, left_x) = (np.min(y), np.min(x))
-    (bottom_y, right_x) = (np.max(y), np.max(x))
-    cropped_iris = iris[top_y:bottom_y+1, left_x:right_x+1]
-
-    return cropped_iris
+    
+    return iris
 

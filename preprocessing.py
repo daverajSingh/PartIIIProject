@@ -22,6 +22,7 @@ def preprocess_data(data_path):
     for classes in os.listdir(data_path):
         classPath = os.path.join(data_path, classes)
         print(classPath)
+        
         for img in os.listdir(classPath):
             imagePath = os.path.join(classPath, img)
             if not imagePath.endswith(".JPG"):
@@ -30,7 +31,6 @@ def preprocess_data(data_path):
             image = cv2.resize(image, (image.shape[1]//6, image.shape[0]//6)) # Resize to 1/6 of the original size
             
             image = image[:,:,2] # Convert to greyscale along the red channel
-            
             #Gaussian blur
             image = cv2.GaussianBlur(image, (3, 3), 0)
             
