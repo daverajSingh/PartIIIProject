@@ -19,6 +19,9 @@ def daugmanIDO(data_path, pRadiusRange, iRadiusRange, centerXRange, centerYRange
     img = cv2.imread(data_path, cv2.IMREAD_GRAYSCALE)
     imgName = os.path.basename(data_path)
 
+    #Gaussian blur
+    img = cv2.GaussianBlur(img, (3, 3), 0)
+    
     
     best_iris = (0,0,0)
     max_gradientI = -np.inf   
@@ -89,7 +92,7 @@ def daugmanRubberSheet(iris, pupilRadius, irisRadius, pupilCenter, irisCenter):
     """
     angleResolution = 360
     radiusResolution = 60
-    unwrapped = np.zeros((angleResolution, radiusResolution), dtype=np.uint8)
+    unwrapped = np.zeros((radiusResolution, angleResolution), dtype=np.uint8)
     
     dx = irisCenter[0] - pupilCenter[0]
     dy = irisCenter[1] - pupilCenter[1]
@@ -101,7 +104,7 @@ def daugmanRubberSheet(iris, pupilRadius, irisRadius, pupilCenter, irisCenter):
             x = int(pupilCenter[0] + r * np.cos(angle) + dx)
             y = int(pupilCenter[1] + r * np.sin(angle) + dy)
             if 0 <= x < iris.shape[1] and 0 <= y < iris.shape[0]:
-                unwrapped[i, j] = iris[y, x]
+                unwrapped[j, i] = iris[y, x]
     
     return unwrapped
 
@@ -118,24 +121,29 @@ def daugmanGaborWavelet(image):
     
     """
     def gaborfilter(image, frequency, theta):
-        kernel = cv2.getGaborKernel((21, 21), 5, theta, frequency, 1, 0, ktype=cv2.CV_32F)
-        filtered = cv2.filter2D(image, cv2.CV_8UC3, kernel)
+        kernel = cv2.getGaborKernel((15, 15), 3, theta, frequency, 0.5, psi=(np.pi/2), ktype=cv2.CV_64F)
+        filtered = cv2.filter2D(image, cv2.CV_64F, kernel)
+        filtered_real = cv2.filter2D(src=image, ddepth=cv2.CV_64F, kernel=np.real(kernel))
+        filtered_imag = cv2.filter2D(src=image, ddepth=cv2.CV_64F, kernel=np.imag(kernel))
+        plt.imshow(filtered_real, cmap="gray")
+        plt.show()
+        plt.imshow(filtered_imag, cmap="gray")
+        plt.show()
         return filtered
-
-    freq = [0.1, 0.2, 0.3]
+        
+    freq = [0.1, 0.2, 0.4]
     theta = [0, np.pi/4, np.pi/2, 3*np.pi/4]
-    features = []
+    featureVector = np.array([], dtype=np.uint8)
     
-    #Apply Gabor Filter to find the magnitude of the image
-    for frequency in freq:
-        for angle in theta:
-            filtered = gaborfilter(image, frequency, angle)
-            mag, _ = cv2.cartToPolar(filtered.real, filtered.imag)
-            features.append(mag)
-    
-    #Simple Encoding
-    featureVector = np.concatenate(features)
-    featureVector = np.where(featureVector > np.mean(featureVector), 1, 0)
+    # Apply Gabor filter to the image
+    for f in freq:
+        for t in theta:
+            feature = gaborfilter(image, f, t)
+            
+            phase = np.angle(feature, deg=False)
+            quantised = np.array((phase >= 0), dtype=np.uint8)
+            
+            featureVector = np.concatenate((featureVector, quantised.flatten()))
     
     #Returns binary sequence
     return featureVector
@@ -150,4 +158,5 @@ unwrapped = daugmanRubberSheet(image, pupil[2], iris[2], (pupil[0], pupil[1]), (
 plt.imshow(unwrapped, cmap="gray")
 plt.show()
 
+np.set_printoptions(threshold=np.inf)
 print(daugmanGaborWavelet(unwrapped))
