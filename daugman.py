@@ -16,12 +16,11 @@ def daugmanIDO(data_path, pRadiusRange, iRadiusRange, centerXRange, centerYRange
     
     """
     # Load the image from the data_path
-    img = cv2.imread(data_path, cv2.IMREAD_GRAYSCALE)
+    image = cv2.imread(data_path, cv2.IMREAD_GRAYSCALE)
     imgName = os.path.basename(data_path)
 
     #Gaussian blur
-    img = cv2.GaussianBlur(img, (3, 3), 0)
-    
+    img = cv2.GaussianBlur(image, (5, 5), 0)
     
     best_iris = (0,0,0)
     max_gradientI = -np.inf   
@@ -72,7 +71,7 @@ def daugmanIDO(data_path, pRadiusRange, iRadiusRange, centerXRange, centerYRange
         
     print(best_iris, best_pupil, imgName)
         
-    new_image = cropCircle(img, best_pupil, best_iris)
+    new_image = cropCircle(image, best_pupil, best_iris)
     #Returns processed image and values
     return new_image, best_pupil, best_iris
 
@@ -121,17 +120,13 @@ def daugmanGaborWavelet(image):
     
     """
     def gaborfilter(image, frequency, theta):
-        kernel = cv2.getGaborKernel((15, 15), 3, theta, frequency, 0.5, psi=(np.pi/2), ktype=cv2.CV_64F)
-        filtered = cv2.filter2D(image, cv2.CV_64F, kernel)
-        filtered_real = cv2.filter2D(src=image, ddepth=cv2.CV_64F, kernel=np.real(kernel))
-        filtered_imag = cv2.filter2D(src=image, ddepth=cv2.CV_64F, kernel=np.imag(kernel))
-        plt.imshow(filtered_real, cmap="gray")
-        plt.show()
-        plt.imshow(filtered_imag, cmap="gray")
-        plt.show()
+        kernel = cv2.getGaborKernel((3,3),sigma=0.5, theta=theta, lambd=frequency, gamma=0.5, psi=0, ktype=cv2.CV_32F)
+        
+        filtered = cv2.filter2D(image, cv2.CV_8UC3, kernel)
+        
         return filtered
         
-    freq = [0.1, 0.2, 0.4]
+    freq = [0.2, 0.3, 0.4]
     theta = [0, np.pi/4, np.pi/2, 3*np.pi/4]
     featureVector = np.array([], dtype=np.uint8)
     
@@ -140,12 +135,11 @@ def daugmanGaborWavelet(image):
         for t in theta:
             feature = gaborfilter(image, f, t)
             
-            phase = np.angle(feature, deg=False)
-            quantised = np.array((phase >= 0), dtype=np.uint8)
+            plt.imshow(feature, cmap="gray")
+            plt.show()
             
-            featureVector = np.concatenate((featureVector, quantised.flatten()))
-    
-    #Returns binary sequence
+            featureVector = np.append(featureVector, feature.ravel())
+            
     return featureVector
 
 image, pupil, iris = daugmanIDO("preprocessed_images\IMG_001_R_1.JPG", (25, 40), (60, 90), (150, 180), (80, 120), 1)
@@ -158,5 +152,7 @@ unwrapped = daugmanRubberSheet(image, pupil[2], iris[2], (pupil[0], pupil[1]), (
 plt.imshow(unwrapped, cmap="gray")
 plt.show()
 
-np.set_printoptions(threshold=np.inf)
-print(daugmanGaborWavelet(unwrapped))
+#sharpen image to enhance edges
+x = daugmanGaborWavelet(unwrapped)
+# write to file
+np.savetxt("feature_vector.txt", x, fmt='%d')
