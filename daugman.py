@@ -93,18 +93,30 @@ def daugmanRubberSheet(iris, pupilRadius, irisRadius, pupilCenter, irisCenter):
     radiusResolution = 60
     unwrapped = np.zeros((radiusResolution, angleResolution), dtype=np.uint8)
     
+    # Calculate the difference between the centers of the iris and pupil
     dx = irisCenter[0] - pupilCenter[0]
     dy = irisCenter[1] - pupilCenter[1]
     
-    for i in range(angleResolution):
-        angle = 2 * np.pi * i / angleResolution
-        for j in range(radiusResolution):
-            r = pupilRadius + j * (irisRadius - pupilRadius) / radiusResolution
-            x = int(pupilCenter[0] + r * np.cos(angle) + dx)
-            y = int(pupilCenter[1] + r * np.sin(angle) + dy)
-            if 0 <= x < iris.shape[1] and 0 <= y < iris.shape[0]:
-                unwrapped[j, i] = iris[y, x]
-    
+    # If the difference is within a certain range, adjust the unwrapped image
+    if -10 <= dx <= 10 and -10 <= dy <= 10:
+        for i in range(angleResolution):
+            angle = 2 * np.pi * i / angleResolution
+            for j in range(radiusResolution):
+                r = pupilRadius + j * (irisRadius - pupilRadius) / radiusResolution
+                x = int(pupilCenter[0] + r * np.cos(angle) + dx)
+                y = int(pupilCenter[1] + r * np.sin(angle) + dy)
+                if 0 <= x < iris.shape[1] and 0 <= y < iris.shape[0]:
+                    unwrapped[j, i] = iris[y, x]
+    else: # Otherwise, use the iris center, as the iris has been incorrectly identified
+        for i in range(angleResolution):
+            angle = 2 * np.pi * i / angleResolution
+            for j in range(radiusResolution):
+                r = pupilRadius + j * (irisRadius - pupilRadius) / radiusResolution
+                x = int(irisCenter[0] + r * np.cos(angle))
+                y = int(irisCenter[1] + r * np.sin(angle))
+                if 0 <= x < iris.shape[1] and 0 <= y < iris.shape[0]:
+                    unwrapped[j, i] = iris[y, x]
+
     return unwrapped
 
 

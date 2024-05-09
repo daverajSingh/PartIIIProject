@@ -1,5 +1,7 @@
 import numpy as np
 import cv2
+from scipy.fftpack import fft, ifft
+import matplotlib.pyplot as plt
 
 def masekLogGabor(image):
     """
@@ -12,21 +14,25 @@ def masekLogGabor(image):
     filtered: the filtered image
     """
     
-    def createFilter(signalLength, centerFrequency, gaussianSpread, modulationFactor):
-        freqIndices = np.linspace(-0.5,0.5, signalLength, endpoint=False)
-        gaussianEnvelope = np.exp(-np.pi *((freqIndices - centerFrequency) ** 2) / gaussianSpread**2)
-        sinComponent = np.exp(-2j * np.pi * modulationFactor * (freqIndices - centerFrequency) ** 2)
-        filter = gaussianEnvelope * sinComponent
-        return filter
+    def createFilter(points, w0, a):
+        w = np.fft.fftfreq(points) * points
+        gaussianEnvelope = np.exp(-np.pi * ((w-w0)**2)/(a**2))
+        sinComponent = np.exp(-2j * np.pi * a * (w-w0))
+        return gaussianEnvelope * sinComponent
+
+    size = image.shape[1] #applied acorss rows
     
-    filter = createFilter(signalLength=360, centerFrequency=0.25, gaussianSpread=0.1, modulationFactor=0.1)
+    gabor = createFilter(size, 50, 15)
     
-    filtered = cv2.filter2D(image, cv2.CV_8UC3, filter)
+    filtered = np.zeros_like(image, dtype=np.complex128)
+    for i in range(image.shape[0]):
+        imageRowfft = fft(image[i, :])
+        filtered[i, :] = ifft(imageRowfft * gabor)
+        
     
-    return filtered
-    
-    
+    return np.abs(filtered)
     
 x = cv2.imread("preprocessed_images\IMG_001_R_1.JPG", cv2.IMREAD_GRAYSCALE)
-filtered = masekLogGabor(x)
-print(filtered)    
+filtered = np.around(masekLogGabor(x)).astype(np.uint8)
+plt.imshow(filtered, cmap='gray')   
+plt.show()
