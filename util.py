@@ -18,7 +18,7 @@ def cropCircle(imageName, pupil, iris):
     
     # Load the image
     if imageName is None:
-        raise FileNotFoundError("The image file was not found.")
+        raise FileNotFoundError("The image was not found.")
 
     # Create a mask with the same dimensions as the image, filled with zeros (black)
     mask = np.zeros_like(imageName)
