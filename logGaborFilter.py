@@ -1,8 +1,5 @@
 import numpy as np
-import os
 import cv2
-import matplotlib.pyplot as plt
-
 
 def masekLogGabor(image):
     """
@@ -17,23 +14,19 @@ def masekLogGabor(image):
     
     def createFilter(signalLength, centerFrequency, gaussianSpread, modulationFactor):
         freqIndices = np.linspace(-0.5,0.5, signalLength, endpoint=False)
-
-        gaussainEnvelope = np.exp(-np.pi *((freqIndices - centerFrequency) ** 2) / gaussianSpread**2)
+        gaussianEnvelope = np.exp(-np.pi *((freqIndices - centerFrequency) ** 2) / gaussianSpread**2)
         sinComponent = np.exp(-2j * np.pi * modulationFactor * (freqIndices - centerFrequency) ** 2)
-        filter = gaussainEnvelope * sinComponent
+        filter = gaussianEnvelope * sinComponent
         return filter
     
     filter = createFilter(signalLength=360, centerFrequency=0.25, gaussianSpread=0.1, modulationFactor=0.1)
     
-    signalfft = np.fft.fft2(image)
-    signalfftshifted = np.fft.fftshift(signalfft)
+    filtered = cv2.filter2D(image, cv2.CV_8UC3, filter)
     
-    result = signalfftshifted * filter
-    
-    resultifft = np.fft.ifftshift(result)
-    filteredSignal= np.fft.ifft(resultifft)
-    
-    return filteredSignal.real    
+    return filtered
     
     
     
+x = cv2.imread("preprocessed_images\IMG_001_R_1.JPG", cv2.IMREAD_GRAYSCALE)
+filtered = masekLogGabor(x)
+print(filtered)    

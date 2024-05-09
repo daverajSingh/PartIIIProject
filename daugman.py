@@ -134,13 +134,14 @@ def daugmanGaborWavelet(image):
     for f in freq:
         for t in theta:
             feature = gaborfilter(image, f, t)
-            
-            plt.imshow(feature, cmap="gray")
-            plt.show()
-            
             featureVector = np.append(featureVector, feature.ravel())
-            
-    return featureVector
+
+    # Basic encoding - if the pixel value is greater than the mean, it is encoded as 1, otherwise 0
+    encoded = np.zeros_like(featureVector)
+    encoded[featureVector > np.mean(featureVector)] = 1
+    encoded[featureVector < np.mean(featureVector)] = 0
+    
+    return encoded
 
 image, pupil, iris = daugmanIDO("preprocessed_images\IMG_001_R_1.JPG", (25, 40), (60, 90), (150, 180), (80, 120), 1)
 
@@ -152,7 +153,6 @@ unwrapped = daugmanRubberSheet(image, pupil[2], iris[2], (pupil[0], pupil[1]), (
 plt.imshow(unwrapped, cmap="gray")
 plt.show()
 
-#sharpen image to enhance edges
 x = daugmanGaborWavelet(unwrapped)
 # write to file
 np.savetxt("feature_vector.txt", x, fmt='%d')
