@@ -20,7 +20,7 @@ def masekLogGabor(image):
         sinComponent = np.exp(-2j * np.pi * a * (w-w0))
         return gaussianEnvelope * sinComponent
 
-    size = image.shape[1] #applied acorss rows
+    size = image.shape[1] #applied across rows
     
     gabor = createFilter(size, 50, 15)
     
@@ -28,7 +28,6 @@ def masekLogGabor(image):
     for i in range(image.shape[0]):
         imageRowfft = fft(image[i, :])
         filtered[i, :] = ifft(imageRowfft * gabor)
-        
     
     return np.abs(filtered)
     

@@ -4,7 +4,7 @@ import os
 import matplotlib.pyplot as plt
 from util import cropCircle
 
-def houghTransform(image, pupilRadiusMin, pupilRadiusMax, irisRadiusMin, irisRadiusMax):
+def houghTransform(image, pupilRadiusMax, irisRadiusMin):
     
     """
     Performs Hough Transform to detect the iris and pupil circles.
@@ -30,8 +30,10 @@ def houghTransform(image, pupilRadiusMin, pupilRadiusMax, irisRadiusMin, irisRad
           
     if not np.any(irisCircles):
         print("No iris detected.") 
+        return None, None, None
     elif not np.any(pupilCircles):
-        print("No pupil detected.")  
+        print("No pupil detected.")
+        return None, None, None  
     else:
         averageIris = np.mean(irisCircles, axis=1)
         iris = np.uint16(np.around(averageIris[0]))
@@ -71,19 +73,19 @@ def arsalanHoughTransform(image, pupilRadiusMin, pupilRadiusMax, irisRadiusMin, 
           
     if not np.any(irisCircles):
         print("No iris detected.") 
+        return None, None, None
     elif not np.any(pupilCircles):
         print("No pupil detected.")  
-    elif len(irisCircles) > 1 or len(pupilCircles) > 1:
-        print("More than one iris or pupil detected.")
-    elif len(irisCircles) == 1 & len(pupilCircles) == 1:
-        irisCircles = np.uint16(np.around(irisCircles))
-        pupilCircles = np.uint16(np.around(pupilCircles))
-        iris = irisCircles[0][0]
-        pupil = pupilCircles[0][0]
+        return None, None, None
+    else:
+        averageIris = np.mean(irisCircles, axis=1)
+        iris = np.uint16(np.around(averageIris[0]))
+        
+        averagePupil = np.mean(pupilCircles, axis=1)
+        pupil = np.uint16(np.around(averagePupil[0]))
+        
         print(iris, pupil)
         image = cropCircle(image, pupil, iris)
         return image, iris, pupil
 
-x, _, _ = houghTransform("preprocessed_images\IMG_001_R_1.JPG", 10, 50, 50, 100)
-plt.imshow(x, cmap='gray')
-plt.show()
+

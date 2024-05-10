@@ -119,7 +119,6 @@ def daugmanRubberSheet(iris, pupilRadius, irisRadius, pupilCenter, irisCenter):
 
     return unwrapped
 
-
 def daugmanGaborWavelet(image):
     """
     Performs Daugmans Gabor Wavelet on the processed images.
@@ -155,16 +154,3 @@ def daugmanGaborWavelet(image):
     
     return encoded
 
-image, pupil, iris = daugmanIDO("preprocessed_images\IMG_001_R_1.JPG", (25, 40), (60, 90), (150, 180), (80, 120), 1)
-
-plt.imshow(image, cmap="gray")
-plt.show()
-
-unwrapped = daugmanRubberSheet(image, pupil[2], iris[2], (pupil[0], pupil[1]), (iris[0], iris[1]))
-
-plt.imshow(unwrapped, cmap="gray")
-plt.show()
-
-x = daugmanGaborWavelet(unwrapped)
-# write to file
-np.savetxt("feature_vector.txt", x, fmt='%d')

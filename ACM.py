@@ -22,7 +22,7 @@ def ACM(image_path):
 
     # Initial Guesses for iris and pupil
     best_iris = (img.shape[1]//2, img.shape[0]//2, 80)
-    best_pupil = (img.shape[1]//2, img.shape[0]//2, 20)
+    best_pupil = (img.shape[1]//2, img.shape[0]//2, 15)
     
     #Snake for Iris
     sI = np.linspace(0, 2*np.pi, 400)
@@ -40,10 +40,9 @@ def ACM(image_path):
     initP = np.array([xP, yP]).T
     
     #Active Contour Model
-    snakePupil = active_contour(img, initP, alpha = 0.001, beta=10000, gamma=0.0001, convergence=0.01, w_line=-100, w_edge=100, max_num_iter=75)
+    snakePupil = active_contour(img, initP, alpha = 0.0001, beta=100000, gamma=0.00001, convergence=0.001, w_line=-100, w_edge=1000, max_num_iter=75)
         
     #Get centers and radii
-    
     best_iris = (int(np.mean(snakeIris[:, 0])), int(np.mean(snakeIris[:, 1])), int(np.mean(np.sqrt((snakeIris[:, 0] - best_iris[0])**2 + (snakeIris[:, 1] - best_iris[1])**2))))
                  
     best_pupil = (int(np.mean(snakePupil[:, 0])), int(np.mean(snakePupil[:, 1])), int(np.mean(np.sqrt((snakePupil[:, 0] - best_pupil[0])**2 + (snakePupil[:, 1] - best_pupil[1])**2))))
@@ -54,8 +53,4 @@ def ACM(image_path):
     
     return new_image, best_iris, best_pupil
     
-        
-image, iris, pupil = ACM("preprocessed_images\IMG_001_R_1.JPG")
-plt.imshow(image, cmap='gray')
-plt.show()
 
