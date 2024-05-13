@@ -20,7 +20,7 @@ else:
     for file in os.listdir("system4/normalized_images"):
         os.remove("system4/normalized_images/" + file)
 
-features = pd.DataFrame(columns = ["ClassID", "FeatureVector"])
+features = []
 
 for file in dir:
     if file.endswith("JPG"):
@@ -49,13 +49,16 @@ for file in dir:
         
         #Feature Extraction
         maLVA = maMethod.LVA(normalizedImage)
+        print(maLVA)
         
         #Save the Gabor features with class Id
-        features.add({"ClassID": classID, "FeatureVector": maLVA})        
+        features.append([classID, maLVA])
         print("Feature Extracted")
-        
+
+features = pd.DataFrame(features, columns = ["ClassID", "FeatureVector"])
+
 #Save the features to a file
-np.savetxt("system4/features.npy", features)
+np.save("system4/features.npy", features)
 
 
         

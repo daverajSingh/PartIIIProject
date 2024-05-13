@@ -37,7 +37,7 @@ def LVA(image):
         #Encoding
         binary = np.zeros(len(signal), dtype=int)
         for idx, nature in features:
-            binary[idx] = 1 if nature == 'max' else -1
+            binary[idx] = 1 if nature == 'max' else 0
         
         for i in range(1, len(binary)):
             binary[i] = binary[i] ^ binary[i-1]

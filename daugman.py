@@ -20,28 +20,26 @@ def daugmanIDO(data_path, pRadiusRange, iRadiusRange, centerXRange, centerYRange
     imgName = os.path.basename(data_path)
 
     #Gaussian blur
-    img = cv2.GaussianBlur(image, (5, 5), 0)
+    img = cv2.GaussianBlur(image, (7, 7), 0)
+    img = cv2.equalizeHist(img)
     
+    rows, cols = img.shape
+
     best_iris = (0,0,0)
     max_gradientI = -np.inf   
         
     best_pupil = (0,0,0)
     max_gradientP = -np.inf
-        
-    rows, cols = img.shape
+
+    gradients = np.gradient(img.astype(float), axis=(0, 1))
+    gradientMagnitude = np.sqrt(gradients[0]**2 + gradients[1]**2)
+
     for r in range(iRadiusRange[0], iRadiusRange[1], deltaRadius):
         for x in range(centerXRange[0], centerXRange[1]):
             for y in range(centerYRange[0], centerYRange[1]):
                 if x - r < 0 or x + r > cols or y - r < 0 or y + r > rows:
                     continue  # Ensure the circle mask doesn't go out of image bounds
-               # Create a circular mask
-                mask = np.zeros((rows, cols), dtype=np.uint8)
-                cv2.circle(mask, (x, y), r, 255, 1)
-                # Calculate gradients along the circle
-                edges = cv2.Canny(img, 120, 150)
-                masked_edges = cv2.bitwise_and(edges, edges, mask=mask)
-                gradient_sum = np.sum(masked_edges) / (2 * np.pi * r)  # Normalize by circumference
-                
+                gradient_sum = computeGradient(gradientMagnitude, x, y, r, deltaRadius)
                 if gradient_sum > max_gradientI:
                     max_gradientI = gradient_sum
                     best_iris = (x, y, r)
@@ -57,14 +55,7 @@ def daugmanIDO(data_path, pRadiusRange, iRadiusRange, centerXRange, centerYRange
             for y in range(pCenterYRange[0], pCenterYRange[1]):
                 if x - r < 0 or x + r > cols or y - r < 0 or y + r > rows:
                     continue  # Ensure the circle mask doesn't go out of image bounds
-                # Create a circular mask
-                mask = np.zeros((rows, cols), dtype=np.uint8)
-                cv2.circle(mask, (x, y), r, 255, 1)
-                # Calculate gradients along the circle
-                edges = cv2.Canny(img, 40, 80)
-                masked_edges = cv2.bitwise_and(edges, edges, mask=mask)
-                gradient_sum = np.sum(masked_edges) / (2 * np.pi * r)  # Normalize by circumference
-                    
+                gradient_sum = computeGradient(gradientMagnitude, x, y, r, deltaRadius)
                 if gradient_sum > max_gradientP:
                     max_gradientP = gradient_sum
                     best_pupil = (x, y, r)
@@ -90,8 +81,8 @@ def daugmanRubberSheet(iris, pupilRadius, irisRadius, pupilCenter, irisCenter):
     unwrapped: unwrapped image of the iris
     
     """
-    angleResolution = 360
-    radiusResolution = 60
+    angleResolution = 512
+    radiusResolution = 64
     unwrapped = np.zeros((radiusResolution, angleResolution), dtype=np.uint8)
     
     # Calculate the difference between the centers of the iris and pupil
@@ -114,10 +105,18 @@ def daugmanRubberSheet(iris, pupilRadius, irisRadius, pupilCenter, irisCenter):
             angle = 2 * np.pi * i / angleResolution
             for j in range(radiusResolution):
                 r = pupilRadius + j * (irisRadius - pupilRadius) / radiusResolution
-                x = int(irisCenter[0] + r * np.cos(angle) + dx)
-                y = int(irisCenter[1] + r * np.sin(angle) + dy)
+                x = int(pupilCenter[0] + r * np.cos(angle) + dx)
+                y = int(pupilCenter[1] + r * np.sin(angle) + dy)
                 if 0 <= x < iris.shape[1] and 0 <= y < iris.shape[0]:
                     unwrapped[j, i] = iris[y, x]
+
+    unwrapped = cv2.equalizeHist(unwrapped)
+
+    #Crop image to remove right half - eyelid and eyelashes
+    unwrapped = unwrapped[:, 0:256]
+    
+    #Keep only lower 75% of the image
+    unwrapped = unwrapped[16:64, :]
 
     return unwrapped
 
@@ -132,27 +131,56 @@ def daugmanGaborWavelet(image):
     featureVector: feature vector of the processed image
     
     """
-    def gaborfilter(image, frequency, theta):
-        kernel = cv2.getGaborKernel((3,3),sigma=0.5, theta=theta, lambd=frequency, gamma=0.5, psi=0, ktype=cv2.CV_32F)
         
-        filtered = cv2.filter2D(image, cv2.CV_8UC3, kernel)
-        
-        return filtered
-        
-    freq = [0.2, 0.3, 0.4]
-    theta = [0, np.pi/4, np.pi/2, 3*np.pi/4]
-    featureVector = np.array([], dtype=np.uint8)
+    freq = [0.1, 0.2, 0.4, 0.6]
+    theta = [0, np.pi/6, np.pi/3, np.pi/2, 2*np.pi/3, 5*np.pi/6]
+    rows, cols = image.shape
     
-    # Apply Gabor filter to the image
-    for f in freq:
-        for t in theta:
-            feature = gaborfilter(image, f, t)
-            featureVector = np.append(featureVector, feature.ravel())
+    iris_code = np.zeros((rows, cols, len(freq) * len(theta) * 2), dtype=np.uint8)
+    
+    image = cv2.addWeighted(image, 1, np.zeros(image.shape, image.dtype), -0.5, 0)
+    sharpen = np.array([[0, -1, 0], [-1, 5, -1], [0, -1, 0]])
+    image = cv2.filter2D(image, -1, sharpen)
 
-    # Basic encoding - if the pixel value is greater than the mean, it is encoded as 1, otherwise 0
-    encoded = np.zeros(featureVector.shape, dtype=np.uint8)    
-    encoded[featureVector > np.mean(featureVector)] = 1
-    encoded[featureVector < np.mean(featureVector)] = 0
-    
-    return encoded
+        
+    # Apply Gabor filter to the image
+    for idx, f in enumerate(freq):
+        for jdx, t in enumerate(theta):
+            feature = gaborfilter(image, f, t)
+            
+            phase = np.arctan2(np.imag(feature), np.real(feature))
+            bit1 = (phase >= 0).astype(np.uint8)
+            bit2 = np.logical_or(phase >= np.pi/2, phase < -np.pi/2).astype(np.uint8)
+
+            iris_code[:,:,2*(idx*len(theta)+jdx)] = bit1
+            iris_code[:,:,2*(idx*len(theta)+jdx)+1] = bit2
+
+
+    return iris_code.flatten()
+
+
+def computeGradient(gradientMagnitude, centerX, centerY, radius, deltaradius):
+    rows, cols = gradientMagnitude.shape
+    mask = np.zeros((rows, cols), dtype = np.uint8)
+    cv2.circle(mask, (centerX, centerY), radius + deltaradius, 255, -1)
+    cv2.circle(mask, (centerX, centerY), radius - deltaradius, 0, -1)
+
+    gradient = cv2.bitwise_and(gradientMagnitude, gradientMagnitude, mask=mask)
+    totalGradient = np.sum(gradient)
+
+    annulus_area = np.pi * ((radius + deltaradius)**2 - (radius-deltaradius)**2)
+    return totalGradient / annulus_area
+
+
+def gaborfilter(image, frequency, theta):
+    kernel = cv2.getGaborKernel((3,3),sigma=0.5, theta=theta, lambd=frequency, gamma=0.5, psi=0, ktype=cv2.CV_32F)  
+    if kernel is None or kernel.size == 0:
+        print("Kernel creation failed.")
+        
+    filtered = cv2.filter2D(image, cv2.CV_32F, kernel)
+    if filtered is None or filtered.size == 0:
+        print("Filtering failed.")
+      
+    return filtered
+
 

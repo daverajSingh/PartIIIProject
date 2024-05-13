@@ -6,6 +6,7 @@ import houghTransform
 import daugman
 import wildes
 import pandas as pd
+import scipy.spatial.distance  as dist
 
 dataPath = "preprocessed_images"
 dir = os.listdir(dataPath)
@@ -20,7 +21,9 @@ else:
     for file in os.listdir("system2/normalized_images"):
         os.remove("system2/normalized_images/" + file)
 
-features = pd.DataFrame(columns = ["ClassID", "FeatureVector"])
+features = []
+
+previousFeature = None
 
 for file in dir:
     if file.endswith("JPG"):
@@ -54,10 +57,19 @@ for file in dir:
         pair = [classID, laplacianOfGaussian]
         print(pair)
         
+        if previousFeature is not None:
+            hammingDistance = dist.hamming(laplacianOfGaussian, previousFeature)
+            print(hammingDistance)
+            previousFeature = laplacianOfGaussian
+        else:
+            previousFeature = laplacianOfGaussian
+        
+        
         #Save the Gabor features with class Id
-        features.add({"ClassID": classID, "FeatureVector": laplacianOfGaussian})
+        features.append(pair)
         
-        
+features = pd.DataFrame(features, columns = ["ClassID", "FeatureVector"])
+
 #Save the features to a file
 np.save('system2/features.npy', features)
 

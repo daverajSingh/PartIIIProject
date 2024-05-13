@@ -49,7 +49,7 @@ def ACM(image_path):
     
     best_iris = np.around(best_iris).astype(int)
     best_pupil = np.around(best_pupil).astype(int)
-    new_image = cropCircle(image, best_pupil, best_iris)
+    new_image = cropCircle(image, (best_iris[0], best_iris[1], 0), best_iris)
     
     return new_image, best_pupil, best_iris
     

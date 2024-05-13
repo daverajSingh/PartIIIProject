@@ -4,6 +4,7 @@ import numpy as np
 import os
 import matplotlib.pyplot as plt
 import pandas as pd
+import scipy.spatial.distance  as dist
 
 dataPath = "preprocessed_images"
 dir = os.listdir(dataPath)
@@ -18,7 +19,8 @@ else:
     for file in os.listdir("system1/normalized_images"):
         os.remove("system1/normalized_images/" + file)
 
-features = pd.DataFrame(columns = ["ClassID", "FeatureVector"])
+features = []
+previousFeature = None
 
 for file in dir:
     if file.endswith("JPG"):
@@ -30,7 +32,7 @@ for file in dir:
         classID = file.split("_")[1]
         
         #Perform Daugman's Integro Differential Operator
-        image, pupil, iris = daugman.daugmanIDO(image, (25, 40), (60, 90), (150, 180), (80, 120), 1)
+        image, pupil, iris = daugman.daugmanIDO(image, (20, 30), (45, 80), (140, 180), (80, 120), 1)
         
         #Save the localised image
         saved = cv2.imwrite("system1/localised_images/" + imgName, image)
@@ -48,8 +50,14 @@ for file in dir:
         print(pair)
         
         #Save the Gabor features with class Id
-        features.add({"ClassID": classID, "FeatureVector": gaborFeatures})
+        features.append([classID, gaborFeatures])
         
+        #Give Hamming Distance to previous features
+        
+        
+   
+features = pd.DataFrame(features, columns = ["ClassID", "FeatureVector"])   
+     
 #Save the features to a file
 np.save("system1/features.npy", features)
 

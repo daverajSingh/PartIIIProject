@@ -29,5 +29,9 @@ def masekLogGabor(image):
         imageRowfft = fft(image[i, :])
         filtered[i, :] = ifft(imageRowfft * gabor)
     
-    return np.abs(filtered)
+    value = np.abs(filtered)
+    
+    #Return 1D array
+    return value.flatten()
+    
     

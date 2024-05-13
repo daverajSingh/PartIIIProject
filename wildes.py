@@ -14,10 +14,6 @@ def laplacianOfGaussian(image):
     
     filtered = cv2.Laplacian(image, cv2.CV_64F)
     filtered = filtered.ravel()
-    
-    #Basic encoding - if the pixel value is greater than the mean, it is encoded as 1, otherwise 0
-    encoded = np.zeros(filtered.shape, dtype=np.uint8)
-    encoded[filtered > np.mean(filtered)] = 1
-    encoded[filtered < np.mean(filtered)] = 0
-    
-    return encoded
+
+    filtered = np.where(filtered < 0, 0, 1)
+    return np.asarray(filtered)

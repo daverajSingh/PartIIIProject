@@ -20,7 +20,7 @@ else:
     for file in os.listdir("system3/normalized_images"):
         os.remove("system3/normalized_images/" + file)
 
-features = pd.DataFrame(columns = ["ClassID", "FeatureVector"])
+features = []
 
 for file in dir:
     if file.endswith("JPG"):
@@ -32,7 +32,7 @@ for file in dir:
         classID = file.split("_")[1]
         
         #Perform Hough Transform
-        image, pupil, iris = houghTransform.arsalanHoughTransform(image, 20, 40, 60, 90)
+        image, pupil, iris = houghTransform.arsalanHoughTransform(image, 20, 40, 50, 90)
         
         if(image is None):
             continue
@@ -48,10 +48,12 @@ for file in dir:
         
         #Feature Extraction
         logGabor = logGaborFilter.masekLogGabor(normalizedImage)
-        
+        print(logGabor)
         #Save the Gabor features with class Id
-        features.add({"ClassID": classID, "FeatureVector": logGabor})
-        
+        features.append([classID, logGabor])
+
+features = pd.DataFrame(features, columns = ["ClassID", "FeatureVector"])
+
 #Save the features to a file
 np.save("system3/features.npy", features)
 
