@@ -3,7 +3,7 @@ import cv2
 import numpy as np
 import os
 import matplotlib.pyplot as plt
-import util
+import pandas as pd
 
 dataPath = "preprocessed_images"
 dir = os.listdir(dataPath)
@@ -18,7 +18,7 @@ else:
     for file in os.listdir("system1/normalized_images"):
         os.remove("system1/normalized_images/" + file)
 
-features = []
+features = pd.DataFrame(columns = ["ClassID", "FeatureVector"])
 
 for file in dir:
     if file.endswith("JPG"):
@@ -44,11 +44,14 @@ for file in dir:
         #Feature Extraction
         gaborFeatures = daugman.daugmanGaborWavelet(normalizedImage)
         
+        pair = [classID, gaborFeatures]
+        print(pair)
+        
         #Save the Gabor features with class Id
-        features.append((classID, gaborFeatures))
+        features.add({"ClassID": classID, "FeatureVector": gaborFeatures})
         
 #Save the features to a file
-np.save("system1/features.txt", features)
+np.save("system1/features.npy", features)
 
 
         

@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import houghTransform
 import daugman
 import wildes
+import pandas as pd
 
 dataPath = "preprocessed_images"
 dir = os.listdir(dataPath)
@@ -19,7 +20,7 @@ else:
     for file in os.listdir("system2/normalized_images"):
         os.remove("system2/normalized_images/" + file)
 
-features = []
+features = pd.DataFrame(columns = ["ClassID", "FeatureVector"])
 
 for file in dir:
     if file.endswith("JPG"):
@@ -31,7 +32,7 @@ for file in dir:
         classID = file.split("_")[1]
         
         #Perform Hough Transform
-        image, pupil, iris = houghTransform.houghTransform(image)
+        image, pupil, iris = houghTransform.houghTransform(image, 40, 40)
         
         if(image is None):
             continue
@@ -48,11 +49,17 @@ for file in dir:
         #Feature Extraction
         laplacianOfGaussian = wildes.laplacianOfGaussian(normalizedImage)
         
+        print(laplacianOfGaussian)
+        
+        pair = [classID, laplacianOfGaussian]
+        print(pair)
+        
         #Save the Gabor features with class Id
-        features.append((classID, laplacianOfGaussian))
+        features.add({"ClassID": classID, "FeatureVector": laplacianOfGaussian})
+        
         
 #Save the features to a file
-np.save("system2/features.txt", features)
+np.save('system2/features.npy', features)
 
 
         

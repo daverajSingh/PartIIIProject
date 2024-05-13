@@ -47,7 +47,4 @@ def LVA(image):
     encodedFeatureVector = np.concatenate(encodedSignals)
     
     return encodedFeatureVector
-
-
-x = cv2.imread("preprocessed_images\IMG_001_R_1.JPG", cv2.IMREAD_GRAYSCALE)
-featureVector = LVA(x)
+  

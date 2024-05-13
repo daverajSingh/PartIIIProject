@@ -31,7 +31,3 @@ def masekLogGabor(image):
     
     return np.abs(filtered)
     
-x = cv2.imread("preprocessed_images\IMG_001_R_1.JPG", cv2.IMREAD_GRAYSCALE)
-filtered = np.around(masekLogGabor(x)).astype(np.uint8)
-plt.imshow(filtered, cmap='gray')   
-plt.show()

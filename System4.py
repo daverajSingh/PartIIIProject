@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import ACM
 import daugman
 import maMethod
-
+import pandas as pd
 
 dataPath = "preprocessed_images"
 dir = os.listdir(dataPath)
@@ -20,7 +20,7 @@ else:
     for file in os.listdir("system4/normalized_images"):
         os.remove("system4/normalized_images/" + file)
 
-features = []
+features = pd.DataFrame(columns = ["ClassID", "FeatureVector"])
 
 for file in dir:
     if file.endswith("JPG"):
@@ -51,12 +51,11 @@ for file in dir:
         maLVA = maMethod.LVA(normalizedImage)
         
         #Save the Gabor features with class Id
-        features.append((classID, maLVA))
-        
+        features.add({"ClassID": classID, "FeatureVector": maLVA})        
         print("Feature Extracted")
         
 #Save the features to a file
-np.savetxt("system4/features.txt", features)
+np.savetxt("system4/features.npy", features)
 
 
         

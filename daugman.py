@@ -83,7 +83,8 @@ def daugmanRubberSheet(iris, pupilRadius, irisRadius, pupilCenter, irisCenter):
     iris: image of cropped iris
     pupilRadius: radius of pupil
     irisRadius: radius of iris
-    centers: centers of each
+    pupilCenter: centers of pupil
+    irisCenter: centers of iris
     
     Returns:
     unwrapped: unwrapped image of the iris
@@ -98,22 +99,23 @@ def daugmanRubberSheet(iris, pupilRadius, irisRadius, pupilCenter, irisCenter):
     dy = irisCenter[1] - pupilCenter[1]
     
     # If the difference is within a certain range, adjust the unwrapped image
-    if -10 <= dx <= 10 and -10 <= dy <= 10:
+    if not(-10 <= dx <= 10 and -10 <= dy <= 10):
+        dx = dy = 0
         for i in range(angleResolution):
             angle = 2 * np.pi * i / angleResolution
             for j in range(radiusResolution):
                 r = pupilRadius + j * (irisRadius - pupilRadius) / radiusResolution
-                x = int(pupilCenter[0] + r * np.cos(angle) + dx)
-                y = int(pupilCenter[1] + r * np.sin(angle) + dy)
+                x = int(irisCenter[0] + r * np.cos(angle) + dx)
+                y = int(irisCenter[1] + r * np.sin(angle) + dy)
                 if 0 <= x < iris.shape[1] and 0 <= y < iris.shape[0]:
                     unwrapped[j, i] = iris[y, x]
-    else: # Otherwise, use the iris center, as the iris has been incorrectly identified
+    else:
         for i in range(angleResolution):
             angle = 2 * np.pi * i / angleResolution
             for j in range(radiusResolution):
                 r = pupilRadius + j * (irisRadius - pupilRadius) / radiusResolution
-                x = int(irisCenter[0] + r * np.cos(angle))
-                y = int(irisCenter[1] + r * np.sin(angle))
+                x = int(irisCenter[0] + r * np.cos(angle) + dx)
+                y = int(irisCenter[1] + r * np.sin(angle) + dy)
                 if 0 <= x < iris.shape[1] and 0 <= y < iris.shape[0]:
                     unwrapped[j, i] = iris[y, x]
 
@@ -148,7 +150,7 @@ def daugmanGaborWavelet(image):
             featureVector = np.append(featureVector, feature.ravel())
 
     # Basic encoding - if the pixel value is greater than the mean, it is encoded as 1, otherwise 0
-    encoded = np.zeros_like(featureVector)
+    encoded = np.zeros(featureVector.shape, dtype=np.uint8)    
     encoded[featureVector > np.mean(featureVector)] = 1
     encoded[featureVector < np.mean(featureVector)] = 0
     

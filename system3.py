@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import houghTransform
 import daugman
 import logGaborFilter
-
+import pandas as pd
 
 dataPath = "preprocessed_images"
 dir = os.listdir(dataPath)
@@ -20,7 +20,7 @@ else:
     for file in os.listdir("system3/normalized_images"):
         os.remove("system3/normalized_images/" + file)
 
-features = []
+features = pd.DataFrame(columns = ["ClassID", "FeatureVector"])
 
 for file in dir:
     if file.endswith("JPG"):
@@ -32,7 +32,7 @@ for file in dir:
         classID = file.split("_")[1]
         
         #Perform Hough Transform
-        image, pupil, iris = houghTransform.arsalanHoughTransform(image)
+        image, pupil, iris = houghTransform.arsalanHoughTransform(image, 20, 40, 60, 90)
         
         if(image is None):
             continue
@@ -47,13 +47,13 @@ for file in dir:
         cv2.imwrite("system3/normalized_images/" + imgName, normalizedImage)
         
         #Feature Extraction
-        laplacianOfGaussian = logGaborFilter.masekLogGabor(normalizedImage)
+        logGabor = logGaborFilter.masekLogGabor(normalizedImage)
         
         #Save the Gabor features with class Id
-        features.append((classID, laplacianOfGaussian))
+        features.add({"ClassID": classID, "FeatureVector": logGabor})
         
 #Save the features to a file
-np.save("system3/features.txt", features)
+np.save("system3/features.npy", features)
 
 
         

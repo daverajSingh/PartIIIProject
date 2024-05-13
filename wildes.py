@@ -16,7 +16,7 @@ def laplacianOfGaussian(image):
     filtered = filtered.ravel()
     
     #Basic encoding - if the pixel value is greater than the mean, it is encoded as 1, otherwise 0
-    encoded = np.zeros_like(filtered)
+    encoded = np.zeros(filtered.shape, dtype=np.uint8)
     encoded[filtered > np.mean(filtered)] = 1
     encoded[filtered < np.mean(filtered)] = 0
     
